@@ -1,29 +1,58 @@
 var path = require('path');
 var webpack = require('webpack');
+var CopyWebpackPlugin = require('copy-webpack-plugin');
+var CleanWebpackPlugin = require('clean-webpack-plugin');
+var ExtractTextPlugin = require('extract-text-webpack-plugin');
 var HTMLWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  entry: './src/main.js',
+  entry: {
+    app: './src/main.js'
+  },
   output: {
-    path: path.resolve(__dirname, './dist'),
+    path: path.resolve(__dirname, './dist/'),
     publicPath: '',
-    filename: 'build.js'
+    filename: 'assets/js/[name].js'
   },
   module: {
     rules: [
       {
         test: /\.css$/,
-        use: [
-          'vue-style-loader',
-          'css-loader'
-        ],
-      },      {
+        use: ExtractTextPlugin.extract({
+          fallback: 'style-loader',
+          use: ['css-loader']
+        })
+      },
+      {
+        test: /\.scss$/,
+        use: ExtractTextPlugin.extract({
+          fallback: 'style-loader',
+          use: [
+            {
+              loader: 'css-loader',
+              options: {
+                importLoaders: 1,
+                sourceMap: true
+              }
+            },
+            {
+              loader: "sass-loader",
+              options: {
+                sourceMap: true
+              }
+            }
+          ]
+        })
+      },
+      {
+        test: /\.(ttf|eot|svg|woff2?)(\?v=[a-z0-9=\.]+)?$/i,
+        loader: 'file-loader?name=assets/fonts/[name].[ext]'
+      },
+      {
         test: /\.vue$/,
         loader: 'vue-loader',
         options: {
-          loaders: {
-          }
-          // other vue-loader options go here
+          loaders: {}
         }
       },
       {
@@ -35,14 +64,30 @@ module.exports = {
         test: /\.(png|jpg|gif|svg)$/,
         loader: 'file-loader',
         options: {
-          name: '[name].[ext]?[hash]'
+          name: 'assets/img/[name].[ext]?[hash]'
         }
       }
     ]
   },
   plugins: [
+    new CopyWebpackPlugin([
+      {from: 'src/assets/img', to: 'assets/img'},
+      {from: 'src/assets/ajax', to: 'assets/ajax'},
+      {from: 'src/assets/fonts', to: 'assets/fonts'}
+    ]),
+    new ExtractTextPlugin({
+      filename: 'assets/css/screen.css',
+      allChunks: true
+    }),
     new HTMLWebpackPlugin({
-      template: './template.html'
+      title: 'Book Catalogue',
+      filename: './index.html',
+      cache: true,
+      template: 'template.html',
+      files: {
+        js: ['app.js'],
+        css: ['screen.css']
+      }
     })
   ],
   resolve: {
@@ -53,8 +98,9 @@ module.exports = {
   },
   devServer: {
     historyApiFallback: true,
-    noInfo: true,
-    overlay: true
+    noInfo: false,
+    overlay: true,
+    port: 3001
   },
   performance: {
     hints: false
